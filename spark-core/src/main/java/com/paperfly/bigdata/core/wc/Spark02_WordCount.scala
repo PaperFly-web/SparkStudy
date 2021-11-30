@@ -3,7 +3,7 @@ package com.paperfly.bigdata.core.wc
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
-object Spark01_WordCount {
+object Spark02_WordCount {
   def main(args: Array[String]): Unit = {
     //Application
     //Spark框架
@@ -26,13 +26,23 @@ object Spark01_WordCount {
 
     //3.将数据根据单词进行分组，便于统计
     //(hello,hello...),(world,world,world...)
-    val wordGroup: RDD[(String, Iterable[String])] = words.groupBy(word => word)
+    val wordToOne: RDD[(String, Int)] = words.map(word => {
+      (word, 1)
+    })
+
+    val wordGroup: RDD[(String, Iterable[(String, Int)])] = wordToOne.groupBy(
+      t => t._1
+    )
     //4.将分组后的数据进行转换
     //(hello,hello...),(world,world,world...)
     //(hello,2),(world,3)
     val res: RDD[(String, Int)] = wordGroup.map {
       case (word, list) => {
-        (word, list.size)
+        list.reduce(
+          (t1, t2) => {
+            (t1._1, t1._2 + t2._2)
+          }
+        )
       }
     }
 
