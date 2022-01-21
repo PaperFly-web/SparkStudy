@@ -1,18 +1,18 @@
 package com.paperfly.bigdata.streaming
 
-
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord}
 import org.apache.spark.SparkConf
-import org.apache.spark.streaming.dstream.{InputDStream}
+import org.apache.spark.streaming.dstream.{DStream, InputDStream}
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
-object SparkStreaming04_Kafka {
+object SparkStreaming04_Window {
 
     def main(args: Array[String]): Unit = {
 
         val sparkConf = new SparkConf().setMaster("local[*]").setAppName("SparkStreaming")
         val ssc = new StreamingContext(sparkConf, Seconds(3))
+        ssc.checkpoint("cp")
 
         val kafkaPara: Map[String, Object] = Map[String, Object](
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> "linux1:9092,linux2:9092,linux3:9092",
@@ -26,7 +26,18 @@ object SparkStreaming04_Kafka {
             LocationStrategies.PreferConsistent,
             ConsumerStrategies.Subscribe[String, String](Set("bigdata"), kafkaPara)
         )
-        kafkaDataDS.map(_.value()).print()
+        val wordToOne: DStream[(String, Int)] = kafkaDataDS.map(v => {
+            (v.value(), 1)
+        })
+
+        // TODO 窗口的范围应该是采集周期的整数倍
+        // 窗口可以滑动的，但是默认情况下，一个采集周期进行滑动
+        // 这样的话，可能会出现重复数据的计算，为了避免这种情况，可以改变滑动的滑动（步长）
+        //第一个参数：采集多少秒内的数据
+        //第二个参数：窗口一次滑动多少秒范围（也就是步长）
+        val windowDS: DStream[(String, Int)] = wordToOne.window(Seconds(6), Seconds(6))
+
+        windowDS.print()
 
 
         ssc.start()
