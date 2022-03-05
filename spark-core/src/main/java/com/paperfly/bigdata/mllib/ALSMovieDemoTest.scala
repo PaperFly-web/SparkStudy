@@ -41,6 +41,7 @@ object ALSMovieDemoTest {
     //计算模型误差--模型评估
     //......
 
+
     //TODO 3.给用户做推荐
     val result1: DataFrame = model.recommendForAllUsers(5)//给所有用户推荐5部电影
     val result2: DataFrame = model.recommendForAllItems(5)//给所有电影推荐5个用户
